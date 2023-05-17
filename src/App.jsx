@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { set, useFieldArray, useForm } from "react-hook-form";
 import { getValidationObject } from "./getValidationObject";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 function App() {
   const formData = SAMPLE_FORM.FORM_1;
   const {
@@ -54,10 +55,10 @@ const BuildArray = (props) => {
     control: props.control,
     name: props.name,
   });
-
   const [inputFormData, setInputFormData] = useState({});
   const [isEditMode, setIsEditMode] = useState(false);
   const [editFieldIndex, setEditFieldIndex] = useState(null);
+  const [localError, setLocalError] = useState({});
   return (
     <div>
       <p>{props.name}</p>
@@ -79,6 +80,7 @@ const BuildArray = (props) => {
           <div key={e.name}>
             <label>{e.label}</label>
             <BuildFields
+              error={localError[e.name]}
               value={inputFormData ? inputFormData[e.name] : ""}
               onChange={(p) =>
                 setInputFormData((oldObj) => ({
@@ -91,10 +93,24 @@ const BuildArray = (props) => {
         );
       })}
       <button
+        type="button"
         onClick={() => {
+          const validation = props.validation;
+
+          const result = validation.element.safeParse(inputFormData);
+
+          if (!result.success) {
+            const errors = {};
+            result.error.issues.map((e) => {
+              errors[e.path[0]] = e;
+            });
+            console.log(errors);
+            setLocalError(errors);
+            return;
+          }
+          setLocalError({});
           const formData = { ...inputFormData };
           setInputFormData(null);
-
           if (!isEditMode) {
             insert(fields.length, formData);
           } else {
@@ -122,14 +138,17 @@ const BuildArray = (props) => {
                 padding: "10px",
               }}
             >
-              {props.data.map((e) => (
-                <BuildFields
-                  {...e}
-                  key={e.name}
-                  {...props.registerForm(`${props.name}.${idx}.${e.name}`)}
-                  error={errors[`${props.name}`]?.at(idx)[e.name]}
-                />
-              ))}
+              {props.data.map((e) => {
+                const isArrayProp = Array.isArray(errors[`${props.name}`]);
+
+                return (
+                  <BuildFields
+                    {...e}
+                    key={e.name}
+                    {...props.registerForm(`${props.name}.${idx}.${e.name}`)}
+                  />
+                );
+              })}
               <button type="button" onClick={() => remove(idx)}>
                 Delete
               </button>

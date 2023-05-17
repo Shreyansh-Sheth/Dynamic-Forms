@@ -3,7 +3,7 @@ import { z } from "zod";
 export const SAMPLE_FORM = {
   FORM_1: [
     {
-      type: "number",
+      type: "text",
       label: "First Name",
       name: "firstName",
       placeholder: "Enter your first name",
@@ -16,22 +16,22 @@ export const SAMPLE_FORM = {
       placeholder: "Enter your last name",
       validation: z.string().min(3, { message: "min 3" }),
     },
-    {
-      type: "array",
-      name: "p",
-      validation: z.array(
-        z.object({
-          name: z.string().min(2),
-        })
-      ),
-      data: [
-        {
-          type: "text",
-          label: "Name",
-          name: "name",
-        },
-      ],
-    },
+    // {
+    //   type: "array",
+    //   name: "p",
+    //   validation: z.array(
+    //     z.object({
+    //       name: z.string().min(2),
+    //     })
+    //   ),
+    //   data: [
+    //     {
+    //       type: "text",
+    //       label: "Name",
+    //       name: "name",
+    //     },
+    //   ],
+    // },
     {
       type: "array",
       name: "students",
