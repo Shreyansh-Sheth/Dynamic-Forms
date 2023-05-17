@@ -3,6 +3,18 @@ import { z } from "zod";
 export const SAMPLE_FORM = {
   FORM_1: [
     {
+      type: "select",
+      placeholder: "Select",
+      options: [
+        { name: "a", value: "A" },
+        { name: "b", value: "B" },
+      ],
+      label: "Select",
+      name: "select Test",
+      placeholder: "Select",
+      validation: z.string(),
+    },
+    {
       type: "text",
       label: "First Name",
       name: "firstName",
@@ -44,6 +56,7 @@ export const SAMPLE_FORM = {
         startingDate: z.coerce.date(),
         isEndingDate: z.boolean(),
         endingDate: z.coerce.date(),
+        selectGender: z.enum(["M"]),
       }),
       data: [
         {
@@ -63,6 +76,17 @@ export const SAMPLE_FORM = {
           label: "Ending Date",
           name: "endingDate",
         },
+        {
+          type: "select",
+          placeholder: "Select",
+          options: [
+            { name: "male", value: "M" },
+            { name: "female", value: "F" },
+          ],
+          label: "Select",
+          name: "selectGender",
+          placeholder: "Select",
+        },
       ],
     },
     {
@@ -75,6 +99,7 @@ export const SAMPLE_FORM = {
               firstName: z.string().min(2),
               age: z.coerce.number().optional(),
               showAge: z.boolean().default(false),
+              selectGender: z.enum(["M", "F"]),
             })
             .refine(
               (e) => {
@@ -88,6 +113,15 @@ export const SAMPLE_FORM = {
         )
         .min(1),
       data: [
+        {
+          type: "select",
+          options: [
+            { name: "male", value: "M" },
+            { name: "female", value: "F" },
+          ],
+          label: "Select",
+          name: "selectGender",
+        },
         {
           type: "text",
           label: "Name",

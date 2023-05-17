@@ -56,14 +56,19 @@ function App() {
               <p>{item.name}</p>
               <hr />
               {item.data.map((e) => {
+                let error;
+                try {
+                  error = errors[item.name][e.name];
+                } catch {}
+
                 return (
                   <BuildFields
                     watch={watch}
+                    error={error}
                     control={control}
                     key={idx + e.name}
                     {...e}
                     {...register(item.name + "." + e.name)}
-                    error={errors[item.name + "." + e.name]}
                   />
                 );
               })}
@@ -119,6 +124,7 @@ const BuildArray = (props) => {
           e.showIf && inputFormData && inputFormData.hasOwnProperty(e.showIf)
             ? e.showIf && !inputFormData[e.showIf]
             : false;
+
         return (
           <div key={e.name}>
             <BuildFields
@@ -126,6 +132,7 @@ const BuildArray = (props) => {
               error={localError[e.name]}
               placeholder={e.placeholder}
               type={e.type}
+              options={e?.options}
               label={e.label}
               value={
                 inputFormData.hasOwnProperty(e.name)
@@ -242,6 +249,7 @@ const BuildFields = React.forwardRef((props, ref) => {
       });
     }
   }, []);
+  console.log("ERROR", props.error);
 
   //This Is For Array Based Fields So We Can Hide Them Without Main Form Data
   if (props.hidden) {
@@ -255,13 +263,22 @@ const BuildFields = React.forwardRef((props, ref) => {
       }}
     >
       <label>{props.label}</label>
-      <input
-        checked={props.value}
-        defaultValue={props.defaultValue}
-        defaultChecked={props.defaultChecked}
-        {...props}
-        ref={ref}
-      />
+      {["text", "number", "date", "checkbox"].includes(props.type) && (
+        <input
+          checked={props.value}
+          defaultValue={props.defaultValue}
+          defaultChecked={props.defaultChecked}
+          {...props}
+          ref={ref}
+        />
+      )}
+      {props.type === "select" && (
+        <select {...props} ref={ref}>
+          {props.options.map((e) => {
+            return <option value={e.value}>{e.name}</option>;
+          })}
+        </select>
+      )}
       {props.error && (
         <p
           style={{
