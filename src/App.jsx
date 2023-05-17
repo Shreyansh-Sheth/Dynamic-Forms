@@ -1,19 +1,30 @@
 import { SAMPLE_FORM } from "./form";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { set, useFieldArray, useForm } from "react-hook-form";
 import { getValidationObject } from "./getValidationObject";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+
+function accessDeepProp(obj, path) {
+  if (!path) return obj;
+  const properties = path.split(".");
+  return accessDeepProp(obj[properties.shift()], properties.join("."));
+}
+
 function App() {
   const formData = SAMPLE_FORM.FORM_1;
   const {
     register,
     handleSubmit,
     control,
+    getValues,
+    watch,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(getValidationObject(formData)),
   });
+  console.log(errors);
   const logData = handleSubmit((data) => {
     console.log("FORM SUBMITTED");
     console.log(data);
@@ -34,8 +45,35 @@ function App() {
           );
         }
 
+        if (item.type === "block") {
+          return (
+            <div
+              style={{
+                border: "1px solid black",
+                margin: "10px",
+              }}
+            >
+              <p>{item.name}</p>
+              <hr />
+              {item.data.map((e) => {
+                return (
+                  <BuildFields
+                    watch={watch}
+                    control={control}
+                    key={idx + e.name}
+                    {...e}
+                    {...register(item.name + "." + e.name)}
+                    error={errors[item.name + "." + e.name]}
+                  />
+                );
+              })}
+            </div>
+          );
+        }
+
         return (
           <BuildFields
+            watch={watch}
             control={control}
             key={idx + item.name}
             {...item}
@@ -59,6 +97,7 @@ const BuildArray = (props) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editFieldIndex, setEditFieldIndex] = useState(null);
   const [localError, setLocalError] = useState({});
+
   return (
     <div>
       <p>{props.name}</p>
@@ -76,18 +115,37 @@ const BuildArray = (props) => {
       {/* FORM ON TOP */}
 
       {props.data.map((e) => {
+        const isHidden =
+          e.showIf && inputFormData && inputFormData.hasOwnProperty(e.showIf)
+            ? e.showIf && !inputFormData[e.showIf]
+            : false;
         return (
           <div key={e.name}>
-            <label>{e.label}</label>
             <BuildFields
+              hidden={isHidden}
               error={localError[e.name]}
-              value={inputFormData ? inputFormData[e.name] : ""}
-              onChange={(p) =>
+              placeholder={e.placeholder}
+              type={e.type}
+              label={e.label}
+              value={
+                inputFormData.hasOwnProperty(e.name)
+                  ? inputFormData[e.name]
+                  : ""
+              }
+              onChange={(p) => {
+                if (e.type === "checkbox") {
+                  setInputFormData((oldObj) => ({
+                    ...oldObj,
+                    [e.name]: p.target.checked,
+                  }));
+                  return;
+                }
+
                 setInputFormData((oldObj) => ({
                   ...oldObj,
                   [e.name]: p.target.value,
-                }))
-              }
+                }));
+              }}
             />
           </div>
         );
@@ -108,9 +166,10 @@ const BuildArray = (props) => {
             setLocalError(errors);
             return;
           }
+          setInputFormData({});
+
           setLocalError({});
           const formData = { ...inputFormData };
-          setInputFormData(null);
           if (!isEditMode) {
             insert(fields.length, formData);
           } else {
@@ -139,11 +198,11 @@ const BuildArray = (props) => {
               }}
             >
               {props.data.map((e) => {
-                const isArrayProp = Array.isArray(errors[`${props.name}`]);
-
+                const { showIf, ...prop } = e;
                 return (
                   <BuildFields
-                    {...e}
+                    disable
+                    {...prop}
                     key={e.name}
                     {...props.registerForm(`${props.name}.${idx}.${e.name}`)}
                   />
@@ -172,10 +231,37 @@ const BuildArray = (props) => {
 };
 
 const BuildFields = React.forwardRef((props, ref) => {
+  console.log(props.hidden);
+  const [isHidden, setIsHidden] = useState(props.showIf ? true : false);
+  useEffect(() => {
+    if (props.showIf && props.watch) {
+      props.watch((value, { name }) => {
+        if (name === props.showIf) {
+          setIsHidden(!accessDeepProp(value, name));
+        }
+      });
+    }
+  }, []);
+
+  //This Is For Array Based Fields So We Can Hide Them Without Main Form Data
+  if (props.hidden) {
+    return <></>;
+  }
+
   return (
-    <div>
+    <div
+      style={{
+        display: isHidden ? "none" : "block",
+      }}
+    >
       <label>{props.label}</label>
-      <input {...props} ref={ref} />
+      <input
+        checked={props.value}
+        defaultValue={props.defaultValue}
+        defaultChecked={props.defaultChecked}
+        {...props}
+        ref={ref}
+      />
       {props.error && (
         <p
           style={{
